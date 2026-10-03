@@ -23,6 +23,7 @@ h1{font-size:20px;margin:4px 0 12px;display:flex;justify-content:space-between;a
 @keyframes pulseLate{0%,100%{box-shadow:0 0 0 0 rgba(214,69,69,.5)}50%{box-shadow:0 0 0 7px rgba(214,69,69,0)}}
 @media (prefers-reduced-motion: reduce){.card.late-card{animation:none}}
 .latebadge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#fff;background:var(--bad);padding:2px 8px;border-radius:99px;margin-bottom:6px}
+.chip.reward{background:#f5c344;color:#5a4200;font-weight:700}
 .m{font-size:13px;color:var(--mu)}.late{color:var(--bad);font-weight:600}
 .chip{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;background:var(--bd);margin-right:6px}
 .ck{width:26px;height:26px;accent-color:var(--ok)}
@@ -64,7 +65,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const ls=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch(e){return d}};
 const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-let db=null,tab='task',data={task:[],exp:[]},names={a:'คนที่ 1',b:'คนที่ 2'};
+let db=null,tab='task',data={task:[],exp:[]},names={a:'คนที่ 1',b:'คนที่ 2'},rewards={a:0,b:0};
 const COL={task:'tasks',exp:'exps'};
 const who=k=>k==='ab'?'ทั้งคู่':(names[k]||'-');
 const fmtD=d=>{if(!d)return'';const [y,m,dd]=d.split('-');return `${+dd}/${+m}/${+y+543}`};
@@ -88,6 +89,9 @@ function del(type,id){
   $('#dcancel').onclick=()=>{o.hidden=true};
   $('#dgo').onclick=()=>{o.hidden=true;doDel(type,id)};
 }
+function setRewards(r){rewards=r;if(db){db.doc('cfg/rewards').set(r).catch(()=>{});}else{lsSet('rewards',r);}render()}
+function addReward(person,amt){if(!amt||(person!=='a'&&person!=='b'))return;setRewards({...rewards,[person]:(rewards[person]||0)+amt})}
+function payReward(person){setRewards({...rewards,[person]:0})}
 function closeSheet(type,id,after){
   const o=data[type].find(x=>x.id===id);if(!o)return;
   const ov=$('#ov');ov.hidden=false;
@@ -96,18 +100,30 @@ function closeSheet(type,id,after){
     <label>คอมเมนต์ (ถ้ามี)</label><textarea id="cf2" placeholder="เช่น เสร็จแล้ว ทำตามที่มอบหมาย"></textarea>
     <button class="go" id="cgo" style="background:var(--ok)">ยืนยันปิด${type==='task'?'งาน':'รายการ'}</button></div>`;
   ov.onclick=e=>{if(e.target===ov)ov.hidden=true};
-  $('#cgo').onclick=()=>{ov.hidden=true;
-    save(type,{...o,done:true,doneAt:today(),closedBy:$('#cf1').value,comment:$('#cf2').value.trim()});
-    if(after)after()};
+  $('#cgo').onclick=()=>{
+    const closedBy=$('#cf1').value,comment=$('#cf2').value.trim();
+    const doSave=()=>{save(type,{...o,done:true,doneAt:today(),closedBy,comment});
+      if(type==='task'&&o.reward!==''&&o.reward!=null)addReward(closedBy,Number(o.reward));
+      if(after)after()};
+    if(type==='task'&&o.reward!==''&&o.reward!=null){
+      ov.innerHTML=`<div class="sheet" style="text-align:center"><div style="font-size:40px">🎉</div>
+        <div style="font-size:18px;font-weight:700;margin:8px 0">ยินดีด้วย!</div>
+        <div>คุณได้รับรางวัลจำนวน <b>${baht(o.reward)}</b></div>
+        <button class="go" id="cok">ตกลง</button></div>`;
+      $('#cok').onclick=()=>{ov.hidden=true;doSave()};
+    }else{ov.hidden=true;doSave()}
+  };
 }
 function edit(type,id){
   const o=data[type].find(x=>x.id===id);if(!o)return;
   if(type==='task')sheet(`<label>งานที่ต้องทำ</label><input id="f1" value="${esc(o.title)}">
     <label>มอบหมายให้</label><select id="f2">${opts([['a',names.a],['b',names.b],['ab','ทั้งคู่']],o.who)}</select>
     <div class="row"><div><label>ทำภายในวันที่</label><input id="f3" type="date" value="${esc(o.date)||''}"></div><div><label>เวลา</label><input id="f4" type="time" value="${esc(o.time)||''}"></div></div>
+    <label>🎁 เงินรางวัล (บาท, ถ้ามี)</label><input id="f6" type="number" inputmode="decimal" min="0" value="${o.reward!==''&&o.reward!=null?esc(o.reward):''}">
     <label>รายละเอียดเพิ่มเติม</label><textarea id="f5" placeholder="รายละเอียดของงาน">${esc(o.notes)||''}</textarea>`,
     ()=>{const t=$('#f1').value.trim();if(!t){$('#f1').focus();return false}
-      save('task',{...o,title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim()})});
+      const rv=$('#f6').value.trim();
+      save('task',{...o,title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim(),reward:rv===''?'':parseFloat(rv)})});
   else sheet(`<label>รายการ</label><input id="f1" value="${esc(o.title)}">
     <label>หมวด</label><select id="f2">${opts(CATS.map(c=>[c,c]),o.cat)}</select>
     <div class="row"><div><label>จำนวนเงิน (บาท, ถ้ามี)</label><input id="f3" type="number" inputmode="decimal" min="0" value="${esc(o.amount)}"></div><div><label>วันที่</label><input id="f4" type="date" value="${esc(o.date)||''}"></div></div>
@@ -122,7 +138,7 @@ function detail(type,id){
   let rows='';
   if(type==='task'){
     const late=!o.done&&o.date&&(o.date+'T'+(o.time||'23:59')<nowLocal());
-    rows=row('มอบหมายให้',esc(who(o.who)))+row('กำหนดวันที่',o.date?fmtD(o.date):'-')+row('เวลา',esc(o.time)||'-')+
+    rows=row('มอบหมายให้',esc(who(o.who)))+(o.reward!==''&&o.reward!=null?row('🎁 เงินรางวัล',`<b>${baht(o.reward)}</b>`):'')+row('กำหนดวันที่',o.date?fmtD(o.date):'-')+row('เวลา',esc(o.time)||'-')+
       row('สถานะ',o.done?`ปิดแล้ว (เมื่อ ${fmtD(o.doneAt)})`:(late?'<span class="late">⚠️ เลยกำหนด ยังไม่เสร็จ</span>':'ยังไม่เสร็จ'));
   }else{
     const late=!o.done&&o.date&&o.date<today();
@@ -158,14 +174,20 @@ function render(){
     const nowdt=nowLocal();
     const srt=(a,b)=>((a.date||'9')+(a.time||'')).localeCompare((b.date||'9')+(b.time||''));
     const op=data.task.filter(t=>!t.done).sort(srt),dn=data.task.filter(t=>t.done).sort(byDone);
+    if(rewards.a>0||rewards.b>0){
+      h+=`<div class="sum"><div class="m">🎁 เงินรางวัลสะสม (ยังไม่ได้มอบ)</div>`+
+      (rewards.a>0?`<div class="r"><span>${esc(names.a)}</span><span><b>${baht(rewards.a)}</b> <button class="ed" data-act="pay" data-who="a">มอบเงินแล้ว</button></span></div>`:'')+
+      (rewards.b>0?`<div class="r"><span>${esc(names.b)}</span><span><b>${baht(rewards.b)}</b> <button class="ed" data-act="pay" data-who="b">มอบเงินแล้ว</button></span></div>`:'')+
+      `</div>`;
+    }
     h+=sec('⏳ งานที่ต้องทำ',op.length);
     if(!op.length)h+='<div class="empty">ไม่มีงานค้าง 🎉</div>';
     for(const t of op){
       const late=t.date&&(t.date+'T'+(t.time||'23:59')<nowdt);
-      h+=`<div class="card${late?' late-card':''}" data-view="task:${esc(t.id)}"><div class="b">${late?'<div class="latebadge">⚠️ เลยกำหนด</div>':''}<div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span><span class="${late?'late':''}">${t.date?'📅 '+fmtD(t.date):''}${t.time?' ⏰ '+esc(t.time):''}</span></div></div>${btn('edit','task',t.id,'แก้ไข','ed')}${btn('close','task',t.id,'ปิดงาน','cl')}${btn('del','task',t.id,'✕','x')}</div>`;
+      h+=`<div class="card${late?' late-card':''}" data-view="task:${esc(t.id)}"><div class="b">${late?'<div class="latebadge">⚠️ เลยกำหนด</div>':''}<div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span>${t.reward!==''&&t.reward!=null?'<span class="chip reward">🎁 '+baht(t.reward)+'</span>':''}<span class="${late?'late':''}">${t.date?'📅 '+fmtD(t.date):''}${t.time?' ⏰ '+esc(t.time):''}</span></div></div>${btn('edit','task',t.id,'แก้ไข','ed')}${btn('close','task',t.id,'ปิดงาน','cl')}${btn('del','task',t.id,'✕','x')}</div>`;
     }
     if(dn.length){h+=sec('✅ งานที่เสร็จแล้ว',dn.length);
-      for(const t of dn)h+=`<div class="card done" data-view="task:${esc(t.id)}"><div class="b"><div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span>ปิดเมื่อ ${fmtD(t.doneAt)}</div></div>${btn('open','task',t.id,'↩︎ เปิดใหม่','ro')}${btn('del','task',t.id,'✕','x')}</div>`}
+      for(const t of dn)h+=`<div class="card done" data-view="task:${esc(t.id)}"><div class="b"><div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span>${t.reward!==''&&t.reward!=null?'<span class="chip reward">🎁 ได้ '+baht(t.reward)+'</span>':''}ปิดเมื่อ ${fmtD(t.doneAt)}</div></div>${btn('open','task',t.id,'↩︎ เปิดใหม่','ro')}${btn('del','task',t.id,'✕','x')}</div>`}
   }else{
     const op=data.exp.filter(e=>!e.done).sort((a,b)=>(b.date||'').localeCompare(a.date||'')),dn=data.exp.filter(e=>e.done).sort(byDone);
     h+=sec('⏳ ค่าใช้จ่ายที่ยังไม่ปิด',op.length);
@@ -181,6 +203,7 @@ function render(){
 }
 $('#view').addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');
+  if(b&&b.dataset.act==='pay'){payReward(b.dataset.who);return}
   if(b){
     const ty=b.dataset.type,i=b.dataset.id,a=b.dataset.act,o=data[ty].find(x=>x.id===i);
     if(a==='del')del(ty,i);
@@ -208,9 +231,11 @@ $('#fab').onclick=()=>{
   if(tab==='task')sheet(`<label>งานที่ต้องทำ</label><input id="f1" placeholder="เช่น ล้างจาน ถูบ้าน">
     <label>มอบหมายให้</label><select id="f2">${opts([['a',names.a],['b',names.b],['ab','ทั้งคู่']],'a')}</select>
     <div class="row"><div><label>ทำภายในวันที่</label><input id="f3" type="date" value="${today()}"></div><div><label>เวลา</label><input id="f4" type="time"></div></div>
+    <label>🎁 เงินรางวัล (บาท, ถ้ามี)</label><input id="f6" type="number" inputmode="decimal" min="0" placeholder="เช่น 20">
     <label>รายละเอียดเพิ่มเติม (ถ้ามี)</label><textarea id="f5" placeholder="รายละเอียดของงาน"></textarea>`,
     ()=>{const t=$('#f1').value.trim();if(!t){$('#f1').focus();return false}
-      save('task',{id:id(),title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim(),done:false})});
+      const rv=$('#f6').value.trim();
+      save('task',{id:id(),title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim(),reward:rv===''?'':parseFloat(rv),done:false})});
   else sheet(`<label>รายการ</label><input id="f1" placeholder="เช่น ค่าเทอมเทอม 2, สบู่, น้ำยาปรับผ้านุ่ม">
     <label>หมวด</label><select id="f2">${opts(CATS.map(c=>[c,c]),'ของใช้ในบ้าน')}</select>
     <div class="row"><div><label>จำนวนเงิน (บาท, ถ้ามี)</label><input id="f3" type="number" inputmode="decimal" min="0"></div><div><label>วันที่</label><input id="f4" type="date" value="${today()}"></div></div>
@@ -239,10 +264,11 @@ const FIREBASE_CONFIG={
     await firebase.auth().signInAnonymously();
     db=firebase.firestore();
   }catch(e){db=null;noConfig=true}
-  if(!db){if(noConfig)$('#cfgwarn').hidden=false;data.task=ls('task',[]);data.exp=ls('exp',[]);names=ls('names',names);render();return}
+  if(!db){if(noConfig)$('#cfgwarn').hidden=false;data.task=ls('task',[]);data.exp=ls('exp',[]);names=ls('names',names);rewards=ls('rewards',rewards);render();return}
   const sub=(type)=>db.collection(COL[type]).onSnapshot(s=>{data[type]=s.docs.map(d=>({...val(d),id:d.id}));render()},()=>{});
   sub('task');sub('exp');
   db.doc('cfg/names').onSnapshot(s=>{const ex=typeof s.exists==='function'?s.exists():s.exists;const v=ex?val(s):null;if(v&&v.a){names=v;render()}},()=>{});
+  db.doc('cfg/rewards').onSnapshot(s=>{const ex=typeof s.exists==='function'?s.exists():s.exists;const v=ex?val(s):null;if(v){rewards={a:v.a||0,b:v.b||0};render()}},()=>{});
   render();
 })();
 render();
