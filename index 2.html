@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>งานบ้านของเรา</title>
+<style>
+:root{--bg:#fbf7f2;--card:#fff;--tx:#2b2622;--mu:#8a7f76;--ac:#e0703a;--bd:#eadfd3;--ok:#3f9b6a;--bad:#d64545;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1c1917;--card:#292421;--tx:#f3ece4;--mu:#a89c90;--bd:#3b332e}}
+:root[data-theme="dark"]{--bg:#1c1917;--card:#292421;--tx:#f3ece4;--mu:#a89c90;--bd:#3b332e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 "Sarabun","Noto Sans Thai",system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px 16px 96px}
+h1{font-size:20px;margin:4px 0 12px;display:flex;justify-content:space-between;align-items:center}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabs button{flex:1;padding:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;font:inherit;font-weight:600}
+.tabs button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.card{background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--ac);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;cursor:pointer}
+.card .b{flex:1;min-width:0}.card .t{font-weight:600;word-break:break-word}
+.card.done{border-left-color:var(--ok);background:color-mix(in srgb, var(--ok) 8%, var(--card));opacity:.75}
+.card.done .t{text-decoration:line-through;color:var(--mu)}
+.card.done .t::before{content:"✓ ";text-decoration:none;color:var(--ok);font-weight:700}
+.card.late-card{border-left-color:var(--bad);background:color-mix(in srgb, var(--bad) 12%, var(--card));animation:pulseLate 1.1s ease-in-out infinite}
+@keyframes pulseLate{0%,100%{box-shadow:0 0 0 0 rgba(214,69,69,.5)}50%{box-shadow:0 0 0 7px rgba(214,69,69,0)}}
+@media (prefers-reduced-motion: reduce){.card.late-card{animation:none}}
+.latebadge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#fff;background:var(--bad);padding:2px 8px;border-radius:99px;margin-bottom:6px}
+.chip.reward{background:#f5c344;color:#5a4200;font-weight:700}
+.confetti{position:fixed;top:-12px;width:9px;height:15px;z-index:9999;pointer-events:none;animation:confettiFall linear forwards;border-radius:2px}
+@keyframes confettiFall{to{transform:translateY(112vh) rotate(720deg);opacity:.25}}
+.celebrate{animation:popIn .5s cubic-bezier(.26,1.4,.4,1)}
+@keyframes popIn{0%{transform:scale(.4) rotate(-8deg);opacity:0}60%{transform:scale(1.12) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.celebrate .emoji{display:inline-block;animation:emojiBounce 1s ease-in-out infinite}
+@keyframes emojiBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.15)}}
+
+.m{font-size:13px;color:var(--mu)}.late{color:var(--bad);font-weight:600}
+.chip{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;background:var(--bd);margin-right:6px}
+.ck{width:26px;height:26px;accent-color:var(--ok)}
+.x{background:none;border:0;color:var(--mu);font-size:20px;padding:4px 8px}
+.amt{font-weight:700;white-space:nowrap}
+.sum{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;margin-bottom:14px}
+.sum .r{display:flex;justify-content:space-between;font-size:14px;padding:2px 0}
+.sum .big{font-size:22px;font-weight:700}
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ac);color:#fff;border:0;border-radius:99px;padding:14px 22px;font:inherit;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.ov[hidden]{display:none}
+.sheet{background:var(--card);width:100%;max-width:640px;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.sheet label{display:block;font-size:13px;color:var(--mu);margin:10px 0 3px}
+.sheet input,.sheet select,.sheet textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font:inherit}
+.sheet textarea{resize:vertical;min-height:64px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.go{width:100%;margin-top:16px;padding:12px;border:0;border-radius:12px;background:var(--ac);color:#fff;font:inherit;font-weight:700}
+.cl{background:var(--ok);color:#fff;border:0;border-radius:10px;padding:8px 12px;font:inherit;font-weight:600;white-space:nowrap}.ro{background:none;border:1px solid var(--bd);color:var(--mu);border-radius:10px;padding:6px 10px;font:inherit;font-size:13px;white-space:nowrap}
+.ed{background:none;border:1px solid var(--bd);color:var(--tx);border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;white-space:nowrap}
+.note{font-size:13px;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;margin-top:8px;white-space:pre-wrap;word-break:break-word}
+.gear{background:none;border:0;font-size:20px;color:var(--mu)}
+.empty{text-align:center;color:var(--mu);padding:30px 0}
+.thumb{width:46px;height:46px;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:zoom-in}
+.photoprev{margin-top:8px}
+.photoprev img{max-width:100%;max-height:220px;border-radius:10px;display:block;cursor:zoom-in}
+.photoprev .rm{margin-top:6px;background:none;border:1px solid var(--bd);color:var(--bad);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px}
+.lightbox img{max-width:100%;max-height:100%;border-radius:8px}
+.detailimg{max-width:100%;border-radius:12px;margin-top:8px;cursor:zoom-in;display:block}
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+</head>
+<body><main>
+<div id="cfgwarn" hidden style="background:var(--bad);color:#fff;padding:10px 14px;border-radius:12px;margin-bottom:14px;font-size:14px">⚠️ ยังไม่ได้ใส่ค่า Firebase config ในไฟล์ (ตัวแปร FIREBASE_CONFIG) — ตอนนี้ข้อมูลเก็บอยู่ในเครื่องนี้เครื่องเดียว ยังไม่ซิงก์กับอีกฝ่าย</div>
+<h1><span>🏠 งานบ้านของเรา</span><button class="gear" id="gear" aria-label="ตั้งชื่อ">⚙️</button></h1>
+<div class="tabs"><button id="tt" class="on">🧹 งานบ้าน</button><button id="te">💸 ค่าใช้จ่าย</button></div>
+<div id="view"></div>
+<button class="fab" id="fab">+ เพิ่มงาน</button>
+<div id="ov" class="ov" hidden></div>
+</main>
+<script>
+const CATS=['การเรียน','ของใช้ภายในบ้าน','อาหาร','จ่ายบิล','อื่นๆ'];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??d}catch(e){return d}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+let db=null,tab='task',data={task:[],exp:[]},names={a:'คนที่ 1',b:'คนที่ 2'},rewards={a:0,b:0};
+const COL={task:'tasks',exp:'exps'};
+const who=k=>k==='ab'?'ทั้งคู่':(names[k]||'-');
+const fmtD=d=>{if(!d)return'';const [y,m,dd]=d.split('-');return `${+dd}/${+m}/${+y+543}`};
+const baht=n=>'฿'+Number(n||0).toLocaleString('th-TH');
+const val=d=>typeof d.data==='function'?d.data():d.data;
+
+async function save(type,o){
+  if(db){try{await db.collection(COL[type]).doc(o.id).set(o)}catch(e){alert('บันทึกไม่สำเร็จ ลองใหม่อีกครั้ง')}}
+  else{const a=data[type],i=a.findIndex(x=>x.id===o.id);i<0?a.push(o):a[i]=o;lsSet(type,a);render()}
+}
+async function doDel(type,id){
+  if(db){try{await db.collection(COL[type]).doc(id).delete()}catch(e){}}
+  else{data[type]=data[type].filter(x=>x.id!==id);lsSet(type,data[type]);render()}
+}
+function del(type,id){
+  const o=$('#ov');o.hidden=false;
+  o.innerHTML=`<div class="sheet"><div style="font-weight:600;margin-bottom:14px">ลบรายการนี้ใช่ไหม?</div>
+    <div class="row"><button class="go" id="dcancel" style="background:var(--bd);color:var(--tx);margin-top:0">ยกเลิก</button>
+    <button class="go" id="dgo" style="background:var(--bad);margin-top:0">ลบ</button></div></div>`;
+  o.onclick=e=>{if(e.target===o)o.hidden=true};
+  $('#dcancel').onclick=()=>{o.hidden=true};
+  $('#dgo').onclick=()=>{o.hidden=true;doDel(type,id)};
+}
+function setRewards(r){rewards=r;if(db){db.doc('cfg/rewards').set(r).catch(()=>{});}else{lsSet('rewards',r);}render()}
+function addReward(person,amt){if(!amt||(person!=='a'&&person!=='b'))return;setRewards({...rewards,[person]:(rewards[person]||0)+amt})}
+function payReward(person){setRewards({...rewards,[person]:0})}
+function launchConfetti(){
+  const colors=['#f5c344','#e0703a','#3f9b6a','#4a90d9','#d64545','#a569d6'];
+  const n=42;
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');
+    d.className='confetti';
+    d.style.left=(Math.random()*100)+'vw';
+    d.style.background=colors[i%colors.length];
+    d.style.width=(6+Math.random()*6)+'px';
+    d.style.height=(10+Math.random()*8)+'px';
+    const dur=2.2+Math.random()*1.3;
+    d.style.animationDuration=dur+'s';
+    d.style.animationDelay=(Math.random()*0.4)+'s';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),(dur+0.6)*1000);
+  }
+}
+let pendingPhoto=null;
+function fileToDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const maxDim=900;let w=img.width,h=img.height;
+        if(w>maxDim||h>maxDim){const r=Math.min(maxDim/w,maxDim/h);w=Math.round(w*r);h=Math.round(h*r)}
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',0.65));
+      };
+      img.onerror=reject;img.src=e.target.result;
+    };
+    reader.onerror=reject;reader.readAsDataURL(file);
+  });
+}
+function photoField(id,existing){
+  return `<label>📷 รูปภาพ (ถ้ามี)</label><input type="file" id="${id}" accept="image/*">
+    <div class="photoprev" id="${id}prev">${existing?`<img src="${existing}"><button type="button" class="rm" id="${id}rm">ลบรูป</button>`:''}</div>`;
+}
+function wirePhotoField(id){
+  pendingPhoto=null;
+  $('#'+id).onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{
+      pendingPhoto=await fileToDataURL(f);
+      $('#'+id+'prev').innerHTML=`<img src="${pendingPhoto}"><button type="button" class="rm" id="${id}rm">ลบรูป</button>`;
+      $('#'+id+'rm').onclick=()=>{pendingPhoto='';$('#'+id+'prev').innerHTML='';$('#'+id).value=''};
+    }catch(err){}
+  };
+  const rm=$('#'+id+'rm');if(rm)rm.onclick=()=>{pendingPhoto='';$('#'+id+'prev').innerHTML='';$('#'+id).value=''};
+}
+function openImage(src){
+  if(!src)return;
+  const lb=document.createElement('div');lb.className='lightbox';
+  lb.innerHTML=`<img src="${src}">`;
+  lb.onclick=()=>lb.remove();
+  document.body.appendChild(lb);
+}
+function closeSheet(type,id,after){
+  const o=data[type].find(x=>x.id===id);if(!o)return;
+  const ov=$('#ov');ov.hidden=false;
+  ov.innerHTML=`<div class="sheet"><div style="font-weight:600;margin-bottom:6px">ปิด${type==='task'?'งาน':'รายการ'}: ${esc(o.title)}</div>
+    <label>ปิดโดย</label><select id="cf1">${opts([['a',names.a],['b',names.b]],o.who==='b'?'b':'a')}</select>
+    <label>คอมเมนต์ (ถ้ามี)</label><textarea id="cf2" placeholder="เช่น เสร็จแล้ว ทำตามที่มอบหมาย"></textarea>
+    ${type==='task'?photoField('cf3',o.proofPhoto):''}
+    <button class="go" id="cgo" style="background:var(--ok)">ยืนยันปิด${type==='task'?'งาน':'รายการ'}</button></div>`;
+  ov.onclick=e=>{if(e.target===ov)ov.hidden=true};
+  if(type==='task')wirePhotoField('cf3');
+  $('#cgo').onclick=()=>{
+    const closedBy=$('#cf1').value,comment=$('#cf2').value.trim();
+    const proofPhoto=type==='task'?(pendingPhoto!==null?pendingPhoto:(o.proofPhoto||'')):undefined;
+    const doSave=()=>{save(type,{...o,done:true,doneAt:today(),closedBy,comment,...(type==='task'?{proofPhoto}:{})});
+      if(type==='task'&&o.reward!==''&&o.reward!=null)addReward(closedBy,Number(o.reward));
+      if(after)after()};
+    if(type==='task'&&o.reward!==''&&o.reward!=null){
+      ov.innerHTML=`<div class="sheet celebrate" style="text-align:center;background:linear-gradient(180deg,color-mix(in srgb, var(--ac) 14%, var(--card)),var(--card))">
+        <div class="emoji" style="font-size:56px">🎉</div>
+        <div style="font-size:20px;font-weight:800;margin:10px 0 4px">ยินดีด้วย!</div>
+        <div style="font-size:15px">คุณได้รับรางวัลจำนวน</div>
+        <div style="font-size:30px;font-weight:800;color:var(--ac);margin:4px 0 14px">🎁 ${baht(o.reward)}</div>
+        <button class="go" id="cok">เย้! รับทราบ</button></div>`;
+      launchConfetti();
+      $('#cok').onclick=()=>{ov.hidden=true;doSave()};
+    }else{ov.hidden=true;doSave()}
+  };
+}
+function edit(type,id){
+  const o=data[type].find(x=>x.id===id);if(!o)return;
+  if(type==='task'){sheet(`<label>งานที่ต้องทำ</label><input id="f1" value="${esc(o.title)}">
+    <label>มอบหมายให้</label><select id="f2">${opts([['a',names.a],['b',names.b],['ab','ทั้งคู่']],o.who)}</select>
+    <div class="row"><div><label>ทำภายในวันที่</label><input id="f3" type="date" value="${esc(o.date)||''}"></div><div><label>เวลา</label><input id="f4" type="time" value="${esc(o.time)||''}"></div></div>
+    <label>🎁 เงินรางวัล (บาท, ถ้ามี)</label><input id="f6" type="number" inputmode="decimal" min="0" value="${o.reward!==''&&o.reward!=null?esc(o.reward):''}">
+    <label>รายละเอียดเพิ่มเติม</label><textarea id="f5" placeholder="รายละเอียดของงาน">${esc(o.notes)||''}</textarea>
+    ${photoField('f7',o.photo)}`,
+    ()=>{const t=$('#f1').value.trim();if(!t){$('#f1').focus();return false}
+      const rv=$('#f6').value.trim();
+      save('task',{...o,title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim(),reward:rv===''?'':parseFloat(rv),photo:pendingPhoto!==null?pendingPhoto:(o.photo||'')})});
+    wirePhotoField('f7');}
+  else{sheet(`<label>รายการ</label><input id="f1" value="${esc(o.title)}">
+    <label>หมวด</label><select id="f2">${opts(CATS.map(c=>[c,c]),o.cat)}</select>
+    <div class="row"><div><label>จำนวนเงิน (บาท, ถ้ามี)</label><input id="f3" type="number" inputmode="decimal" min="0" value="${esc(o.amount)}"></div><div><label>วันที่</label><input id="f4" type="date" value="${esc(o.date)||''}"></div></div>
+    <label>ใครจ่าย</label><select id="f5">${opts([['a',names.a],['b',names.b]],o.who)}</select>
+    <label>รายละเอียดเพิ่มเติม</label><textarea id="f6" placeholder="รายละเอียดค่าใช้จ่าย">${esc(o.notes)||''}</textarea>
+    ${photoField('f7',o.photo)}`,
+    ()=>{const t=$('#f1').value.trim();const nv=$('#f3').value.trim();if(!t){$('#f1').focus();return false}
+      save('exp',{...o,title:t,cat:$('#f2').value,amount:nv===''?'':parseFloat(nv),date:$('#f4').value,who:$('#f5').value,notes:$('#f6').value.trim(),photo:pendingPhoto!==null?pendingPhoto:(o.photo||'')})});
+    wirePhotoField('f7');}
+}
+function detail(type,id){
+  const o=data[type].find(x=>x.id===id);if(!o)return;
+  const row=(l,v)=>v?`<div class="r" style="padding:6px 0;border-bottom:1px solid var(--bd)"><span class="m">${l}</span><span>${v}</span></div>`:'';
+  let rows='';
+  if(type==='task'){
+    const late=!o.done&&o.date&&(o.date+'T'+(o.time||'23:59')<nowLocal());
+    rows=row('มอบหมายให้',esc(who(o.who)))+(o.reward!==''&&o.reward!=null?row('🎁 เงินรางวัล',`<b>${baht(o.reward)}</b>`):'')+row('กำหนดวันที่',o.date?fmtD(o.date):'-')+row('เวลา',esc(o.time)||'-')+
+      row('สถานะ',o.done?`ปิดแล้ว (เมื่อ ${fmtD(o.doneAt)})`:(late?'<span class="late">⚠️ เลยกำหนด ยังไม่เสร็จ</span>':'ยังไม่เสร็จ'));
+  }else{
+    const late=!o.done&&o.date&&o.date<today();
+    rows=row('หมวด',esc(o.cat))+(o.amount!==''&&o.amount!=null?row('จำนวนเงิน',`<b>${baht(o.amount)}</b>`):'')+row('ใครจ่าย',esc(who(o.who)))+row('วันที่',fmtD(o.date))+
+      row('สถานะ',o.done?`ปิดแล้ว (เมื่อ ${fmtD(o.doneAt)})`:(late?'<span class="late">⚠️ เลยกำหนด ยังไม่ปิด</span>':'ยังไม่ปิด'));
+  }
+  if(o.done&&o.closedBy)rows+=row('ปิดโดย',esc(who(o.closedBy)));
+  const notesHtml=o.notes?`<div class="m" style="margin-top:12px">รายละเอียด</div><div class="note">${esc(o.notes)}</div>`:'';
+  const commentHtml=(o.done&&o.comment)?`<div class="m" style="margin-top:12px">คอมเมนต์ตอนปิด</div><div class="note">${esc(o.comment)}</div>`:'';
+  const photoHtml=o.photo?`<div class="m" style="margin-top:12px">${type==='task'?'รูปตอนมอบหมาย':'รูปใบเสร็จ'}</div><img src="${o.photo}" class="detailimg" data-img="${o.photo}">`:'';
+  const proofHtml=(type==='task'&&o.proofPhoto)?`<div class="m" style="margin-top:12px">รูปตอนปิดงาน</div><img src="${o.proofPhoto}" class="detailimg" data-img="${o.proofPhoto}">`:'';
+  const ov=$('#ov');ov.hidden=false;
+  ov.innerHTML=`<div class="sheet"><div style="font-size:18px;font-weight:700;margin-bottom:10px">${esc(o.title)}</div>${rows}${notesHtml}${photoHtml}${proofHtml}${commentHtml}
+    <div class="row" style="margin-top:16px">
+      ${o.done?'':'<button class="go ed" id="dedit" style="margin-top:0">แก้ไข</button>'}
+      <button class="go" id="dtoggle" style="margin-top:0;background:${o.done?'var(--bd)':'var(--ok)'};color:${o.done?'var(--tx)':'#fff'}">${o.done?'↩︎ เปิดใหม่':'ปิด'+(type==='task'?'งาน':'รายการ')}</button>
+      <button class="go" id="ddel" style="margin-top:0;background:var(--bad)">ลบ</button>
+    </div></div>`;
+  ov.onclick=e=>{
+    const im=e.target.closest('[data-img]');
+    if(im){openImage(im.dataset.img);return}
+    if(e.target===ov)ov.hidden=true
+  };
+  if(!o.done)$('#dedit').onclick=()=>{ov.hidden=true;edit(type,id)};
+  $('#dtoggle').onclick=()=>{
+    if(o.done){ov.hidden=true;save(type,{...o,done:false,doneAt:'',closedBy:'',comment:''})}
+    else{ov.hidden=true;closeSheet(type,id)}
+  };
+  $('#ddel').onclick=()=>{del(type,id)};
+}
+function render(){
+  $('#tt').className=tab==='task'?'on':'';$('#te').className=tab==='exp'?'on':'';
+  $('#fab').textContent=tab==='task'?'+ เพิ่มงาน':'+ เพิ่มค่าใช้จ่าย';
+  const sec=(t,n)=>`<div class="m" style="margin:16px 2px 8px;font-weight:600">${t} (${n})</div>`;
+  const btn=(a,ty,i,l,c)=>`<button class="${c}" data-act="${a}" data-type="${ty}" data-id="${esc(i)}">${l}</button>`;
+  const byDone=(a,b)=>(b.doneAt||'').localeCompare(a.doneAt||'');
+  let h='';
+  if(tab==='task'){
+    const nowdt=nowLocal();
+    const srt=(a,b)=>((a.date||'9')+(a.time||'')).localeCompare((b.date||'9')+(b.time||''));
+    const op=data.task.filter(t=>!t.done).sort(srt),dn=data.task.filter(t=>t.done).sort(byDone);
+    if(rewards.a>0||rewards.b>0){
+      h+=`<div class="sum"><div class="m">🎁 เงินรางวัลสะสม (ยังไม่ได้มอบ)</div>`+
+      (rewards.a>0?`<div class="r"><span>${esc(names.a)}</span><span><b>${baht(rewards.a)}</b> <button class="ed" data-act="pay" data-who="a">มอบเงินแล้ว</button></span></div>`:'')+
+      (rewards.b>0?`<div class="r"><span>${esc(names.b)}</span><span><b>${baht(rewards.b)}</b> <button class="ed" data-act="pay" data-who="b">มอบเงินแล้ว</button></span></div>`:'')+
+      `</div>`;
+    }
+    h+=sec('⏳ งานที่ต้องทำ',op.length);
+    if(!op.length)h+='<div class="empty">ไม่มีงานค้าง 🎉</div>';
+    for(const t of op){
+      const late=t.date&&(t.date+'T'+(t.time||'23:59')<nowdt);
+      h+=`<div class="card${late?' late-card':''}" data-view="task:${esc(t.id)}">${t.photo?`<img src="${t.photo}" class="thumb" data-img="${t.photo}">`:''}<div class="b">${late?'<div class="latebadge">⚠️ เลยกำหนด</div>':''}<div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span>${t.reward!==''&&t.reward!=null?'<span class="chip reward">🎁 '+baht(t.reward)+'</span>':''}<span class="${late?'late':''}">${t.date?'📅 '+fmtD(t.date):''}${t.time?' ⏰ '+esc(t.time):''}</span></div></div>${btn('edit','task',t.id,'แก้ไข','ed')}${btn('close','task',t.id,'ปิดงาน','cl')}${btn('del','task',t.id,'✕','x')}</div>`;
+    }
+    if(dn.length){h+=sec('✅ งานที่เสร็จแล้ว',dn.length);
+      for(const t of dn){const tph=t.proofPhoto||t.photo;h+=`<div class="card done" data-view="task:${esc(t.id)}">${tph?`<img src="${tph}" class="thumb" data-img="${tph}">`:''}<div class="b"><div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span>${t.reward!==''&&t.reward!=null?'<span class="chip reward">🎁 ได้ '+baht(t.reward)+'</span>':''}ปิดเมื่อ ${fmtD(t.doneAt)}</div></div>${btn('open','task',t.id,'↩︎ เปิดใหม่','ro')}${btn('del','task',t.id,'✕','x')}</div>`}}
+  }else{
+    const op=data.exp.filter(e=>!e.done).sort((a,b)=>(b.date||'').localeCompare(a.date||'')),dn=data.exp.filter(e=>e.done).sort(byDone);
+    h+=sec('⏳ ค่าใช้จ่ายที่ยังไม่ปิด',op.length);
+    if(!op.length)h+='<div class="empty">ไม่มีรายการค้าง</div>';
+    for(const e of op){
+      const late=e.date&&e.date<today();
+      h+=`<div class="card${late?' late-card':''}" data-view="exp:${esc(e.id)}">${e.photo?`<img src="${e.photo}" class="thumb" data-img="${e.photo}">`:''}<div class="b">${late?'<div class="latebadge">⚠️ เลยกำหนด</div>':''}<div class="t">${esc(e.title)}</div><div class="m"><span class="chip">${esc(e.cat)}</span>${esc(who(e.who))} จ่าย · ${fmtD(e.date)}</div></div>${e.amount!==''&&e.amount!=null?`<div class="amt">${baht(e.amount)}</div>`:''}${btn('edit','exp',e.id,'แก้ไข','ed')}${btn('close','exp',e.id,'ปิดรายการ','cl')}${btn('del','exp',e.id,'✕','x')}</div>`;
+    }
+    if(dn.length){h+=sec('✅ ค่าใช้จ่ายที่ปิดแล้ว',dn.length);
+      for(const e of dn)h+=`<div class="card done" data-view="exp:${esc(e.id)}">${e.photo?`<img src="${e.photo}" class="thumb" data-img="${e.photo}">`:''}<div class="b"><div class="t">${esc(e.title)}</div><div class="m"><span class="chip">${esc(e.cat)}</span>${esc(who(e.who))} จ่าย · ปิดเมื่อ ${fmtD(e.doneAt)}</div></div>${e.amount!==''&&e.amount!=null?`<div class="amt">${baht(e.amount)}</div>`:''}${btn('open','exp',e.id,'↩︎','ro')}${btn('del','exp',e.id,'✕','x')}</div>`}
+  }
+  $('#view').innerHTML=h;
+}
+$('#view').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');
+  if(b&&b.dataset.act==='pay'){payReward(b.dataset.who);return}
+  if(b){
+    const ty=b.dataset.type,i=b.dataset.id,a=b.dataset.act,o=data[ty].find(x=>x.id===i);
+    if(a==='del')del(ty,i);
+    else if(a==='edit')edit(ty,i);
+    else if(a==='close')closeSheet(ty,i);
+    else if(a==='open'&&o)save(ty,{...o,done:false,doneAt:'',closedBy:'',comment:''});
+    return;
+  }
+  const th=e.target.closest('[data-img]');
+  if(th){openImage(th.dataset.img);return}
+  const c=e.target.closest('[data-view]');
+  if(c){const [ty,i]=c.dataset.view.split(':');detail(ty,i)}
+});
+$('#tt').onclick=()=>{tab='task';render()};
+$('#te').onclick=()=>{tab='exp';render()};
+const pad2=n=>String(n).padStart(2,'0');
+const today=()=>{const d=new Date();return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`};
+const nowLocal=()=>{const d=new Date();return `${today()}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`};
+const opts=(a,sel)=>a.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
+function sheet(html,onGo){
+  const o=$('#ov');o.hidden=false;o.innerHTML=`<div class="sheet">${html}<button class="go" id="go">บันทึก</button></div>`;
+  o.onclick=e=>{if(e.target===o)o.hidden=true};
+  $('#go').onclick=()=>{if(onGo()!==false)o.hidden=true};
+}
+const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+$('#fab').onclick=()=>{
+  if(tab==='task'){sheet(`<label>งานที่ต้องทำ</label><input id="f1" placeholder="เช่น ล้างจาน ถูบ้าน">
+    <label>มอบหมายให้</label><select id="f2">${opts([['a',names.a],['b',names.b],['ab','ทั้งคู่']],'a')}</select>
+    <div class="row"><div><label>ทำภายในวันที่</label><input id="f3" type="date" value="${today()}"></div><div><label>เวลา</label><input id="f4" type="time"></div></div>
+    <label>🎁 เงินรางวัล (บาท, ถ้ามี)</label><input id="f6" type="number" inputmode="decimal" min="0" placeholder="เช่น 20">
+    <label>รายละเอียดเพิ่มเติม (ถ้ามี)</label><textarea id="f5" placeholder="รายละเอียดของงาน"></textarea>
+    ${photoField('f7',null)}`,
+    ()=>{const t=$('#f1').value.trim();if(!t){$('#f1').focus();return false}
+      const rv=$('#f6').value.trim();
+      save('task',{id:id(),title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim(),reward:rv===''?'':parseFloat(rv),photo:pendingPhoto||'',done:false})});
+    wirePhotoField('f7');}
+  else{sheet(`<label>รายการ</label><input id="f1" placeholder="เช่น ค่าเทอมเทอม 2, สบู่, น้ำยาปรับผ้านุ่ม">
+    <label>หมวด</label><select id="f2">${opts(CATS.map(c=>[c,c]),'ของใช้ในบ้าน')}</select>
+    <div class="row"><div><label>จำนวนเงิน (บาท, ถ้ามี)</label><input id="f3" type="number" inputmode="decimal" min="0"></div><div><label>วันที่</label><input id="f4" type="date" value="${today()}"></div></div>
+    <label>ใครจ่าย</label><select id="f5">${opts([['a',names.a],['b',names.b]],'a')}</select>
+    <label>รายละเอียดเพิ่มเติม (ถ้ามี)</label><textarea id="f6" placeholder="รายละเอียดค่าใช้จ่าย"></textarea>
+    ${photoField('f7',null)}`,
+    ()=>{const t=$('#f1').value.trim();const nv=$('#f3').value.trim();if(!t){$('#f1').focus();return false}
+      save('exp',{id:id(),title:t,cat:$('#f2').value,amount:nv===''?'':parseFloat(nv),date:$('#f4').value,who:$('#f5').value,notes:$('#f6').value.trim(),photo:pendingPhoto||''})});
+    wirePhotoField('f7');}
+};
+$('#gear').onclick=()=>sheet(`<label>ชื่อคนที่ 1</label><input id="f1" value="${esc(names.a)}"><label>ชื่อคนที่ 2</label><input id="f2" value="${esc(names.b)}">`,
+  ()=>{const n={a:$('#f1').value.trim()||'คนที่ 1',b:$('#f2').value.trim()||'คนที่ 2'};names=n;lsSet('names',n);
+    if(db)db.doc('cfg/names').set(n).catch(()=>{});render()});
+// วางค่า Firebase config ของคุณตรงนี้ (จาก Firebase Console > Project settings > Your apps > Web app)
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyDfrFxOdd6ogpqOrYJSRqkjzgxBOSEV6ZU",
+  authDomain:"household-676c7.firebaseapp.com",
+  projectId:"household-676c7",
+  storageBucket:"household-676c7.firebasestorage.app",
+  messagingSenderId:"681360264634",
+  appId:"1:681360264634:web:478550599feb45bb52a183"
+};
+(async()=>{
+  let noConfig=false;
+  try{
+    if(!FIREBASE_CONFIG.apiKey||FIREBASE_CONFIG.apiKey.startsWith('วาง'))throw new Error('no-config');
+    firebase.initializeApp(FIREBASE_CONFIG);
+    await firebase.auth().signInAnonymously();
+    db=firebase.firestore();
+  }catch(e){db=null;noConfig=true}
+  if(!db){if(noConfig)$('#cfgwarn').hidden=false;data.task=ls('task',[]);data.exp=ls('exp',[]);names=ls('names',names);rewards=ls('rewards',rewards);render();return}
+  const sub=(type)=>db.collection(COL[type]).onSnapshot(s=>{data[type]=s.docs.map(d=>({...val(d),id:d.id}));render()},()=>{});
+  sub('task');sub('exp');
+  db.doc('cfg/names').onSnapshot(s=>{const ex=typeof s.exists==='function'?s.exists():s.exists;const v=ex?val(s):null;if(v&&v.a){names=v;render()}},()=>{});
+  db.doc('cfg/rewards').onSnapshot(s=>{const ex=typeof s.exists==='function'?s.exists():s.exists;const v=ex?val(s):null;if(v){rewards={a:v.a||0,b:v.b||0};render()}},()=>{});
+  render();
+})();
+render();
+</script></body></html>
