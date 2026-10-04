@@ -24,6 +24,13 @@ h1{font-size:20px;margin:4px 0 12px;display:flex;justify-content:space-between;a
 @media (prefers-reduced-motion: reduce){.card.late-card{animation:none}}
 .latebadge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#fff;background:var(--bad);padding:2px 8px;border-radius:99px;margin-bottom:6px}
 .chip.reward{background:#f5c344;color:#5a4200;font-weight:700}
+.confetti{position:fixed;top:-12px;width:9px;height:15px;z-index:9999;pointer-events:none;animation:confettiFall linear forwards;border-radius:2px}
+@keyframes confettiFall{to{transform:translateY(112vh) rotate(720deg);opacity:.25}}
+.celebrate{animation:popIn .5s cubic-bezier(.26,1.4,.4,1)}
+@keyframes popIn{0%{transform:scale(.4) rotate(-8deg);opacity:0}60%{transform:scale(1.12) rotate(3deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.celebrate .emoji{display:inline-block;animation:emojiBounce 1s ease-in-out infinite}
+@keyframes emojiBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.15)}}
+
 .m{font-size:13px;color:var(--mu)}.late{color:var(--bad);font-weight:600}
 .chip{display:inline-block;font-size:12px;padding:1px 8px;border-radius:99px;background:var(--bd);margin-right:6px}
 .ck{width:26px;height:26px;accent-color:var(--ok)}
@@ -92,6 +99,23 @@ function del(type,id){
 function setRewards(r){rewards=r;if(db){db.doc('cfg/rewards').set(r).catch(()=>{});}else{lsSet('rewards',r);}render()}
 function addReward(person,amt){if(!amt||(person!=='a'&&person!=='b'))return;setRewards({...rewards,[person]:(rewards[person]||0)+amt})}
 function payReward(person){setRewards({...rewards,[person]:0})}
+function launchConfetti(){
+  const colors=['#f5c344','#e0703a','#3f9b6a','#4a90d9','#d64545','#a569d6'];
+  const n=42;
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div');
+    d.className='confetti';
+    d.style.left=(Math.random()*100)+'vw';
+    d.style.background=colors[i%colors.length];
+    d.style.width=(6+Math.random()*6)+'px';
+    d.style.height=(10+Math.random()*8)+'px';
+    const dur=2.2+Math.random()*1.3;
+    d.style.animationDuration=dur+'s';
+    d.style.animationDelay=(Math.random()*0.4)+'s';
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(),(dur+0.6)*1000);
+  }
+}
 function closeSheet(type,id,after){
   const o=data[type].find(x=>x.id===id);if(!o)return;
   const ov=$('#ov');ov.hidden=false;
@@ -106,10 +130,13 @@ function closeSheet(type,id,after){
       if(type==='task'&&o.reward!==''&&o.reward!=null)addReward(closedBy,Number(o.reward));
       if(after)after()};
     if(type==='task'&&o.reward!==''&&o.reward!=null){
-      ov.innerHTML=`<div class="sheet" style="text-align:center"><div style="font-size:40px">🎉</div>
-        <div style="font-size:18px;font-weight:700;margin:8px 0">ยินดีด้วย!</div>
-        <div>คุณได้รับรางวัลจำนวน <b>${baht(o.reward)}</b></div>
-        <button class="go" id="cok">ตกลง</button></div>`;
+      ov.innerHTML=`<div class="sheet celebrate" style="text-align:center;background:linear-gradient(180deg,color-mix(in srgb, var(--ac) 14%, var(--card)),var(--card))">
+        <div class="emoji" style="font-size:56px">🎉</div>
+        <div style="font-size:20px;font-weight:800;margin:10px 0 4px">ยินดีด้วย!</div>
+        <div style="font-size:15px">คุณได้รับรางวัลจำนวน</div>
+        <div style="font-size:30px;font-weight:800;color:var(--ac);margin:4px 0 14px">🎁 ${baht(o.reward)}</div>
+        <button class="go" id="cok">เย้! รับทราบ</button></div>`;
+      launchConfetti();
       $('#cok').onclick=()=>{ov.hidden=true;doSave()};
     }else{ov.hidden=true;doSave()}
   };
