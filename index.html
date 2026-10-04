@@ -53,6 +53,13 @@ h1{font-size:20px;margin:4px 0 12px;display:flex;justify-content:space-between;a
 .note{font-size:13px;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:8px 10px;margin-top:8px;white-space:pre-wrap;word-break:break-word}
 .gear{background:none;border:0;font-size:20px;color:var(--mu)}
 .empty{text-align:center;color:var(--mu);padding:30px 0}
+.thumb{width:46px;height:46px;border-radius:10px;object-fit:cover;flex-shrink:0;cursor:zoom-in}
+.photoprev{margin-top:8px}
+.photoprev img{max-width:100%;max-height:220px;border-radius:10px;display:block;cursor:zoom-in}
+.photoprev .rm{margin-top:6px;background:none;border:1px solid var(--bd);color:var(--bad);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px}
+.lightbox img{max-width:100%;max-height:100%;border-radius:8px}
+.detailimg{max-width:100%;border-radius:12px;margin-top:8px;cursor:zoom-in;display:block}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
@@ -116,17 +123,61 @@ function launchConfetti(){
     setTimeout(()=>d.remove(),(dur+0.6)*1000);
   }
 }
+let pendingPhoto=null;
+function fileToDataURL(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const maxDim=900;let w=img.width,h=img.height;
+        if(w>maxDim||h>maxDim){const r=Math.min(maxDim/w,maxDim/h);w=Math.round(w*r);h=Math.round(h*r)}
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(c.toDataURL('image/jpeg',0.65));
+      };
+      img.onerror=reject;img.src=e.target.result;
+    };
+    reader.onerror=reject;reader.readAsDataURL(file);
+  });
+}
+function photoField(id,existing){
+  return `<label>📷 รูปภาพ (ถ้ามี)</label><input type="file" id="${id}" accept="image/*">
+    <div class="photoprev" id="${id}prev">${existing?`<img src="${existing}"><button type="button" class="rm" id="${id}rm">ลบรูป</button>`:''}</div>`;
+}
+function wirePhotoField(id){
+  pendingPhoto=null;
+  $('#'+id).onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    try{
+      pendingPhoto=await fileToDataURL(f);
+      $('#'+id+'prev').innerHTML=`<img src="${pendingPhoto}"><button type="button" class="rm" id="${id}rm">ลบรูป</button>`;
+      $('#'+id+'rm').onclick=()=>{pendingPhoto='';$('#'+id+'prev').innerHTML='';$('#'+id).value=''};
+    }catch(err){}
+  };
+  const rm=$('#'+id+'rm');if(rm)rm.onclick=()=>{pendingPhoto='';$('#'+id+'prev').innerHTML='';$('#'+id).value=''};
+}
+function openImage(src){
+  if(!src)return;
+  const lb=document.createElement('div');lb.className='lightbox';
+  lb.innerHTML=`<img src="${src}">`;
+  lb.onclick=()=>lb.remove();
+  document.body.appendChild(lb);
+}
 function closeSheet(type,id,after){
   const o=data[type].find(x=>x.id===id);if(!o)return;
   const ov=$('#ov');ov.hidden=false;
   ov.innerHTML=`<div class="sheet"><div style="font-weight:600;margin-bottom:6px">ปิด${type==='task'?'งาน':'รายการ'}: ${esc(o.title)}</div>
     <label>ปิดโดย</label><select id="cf1">${opts([['a',names.a],['b',names.b]],o.who==='b'?'b':'a')}</select>
     <label>คอมเมนต์ (ถ้ามี)</label><textarea id="cf2" placeholder="เช่น เสร็จแล้ว ทำตามที่มอบหมาย"></textarea>
+    ${type==='task'?photoField('cf3',o.proofPhoto):''}
     <button class="go" id="cgo" style="background:var(--ok)">ยืนยันปิด${type==='task'?'งาน':'รายการ'}</button></div>`;
   ov.onclick=e=>{if(e.target===ov)ov.hidden=true};
+  if(type==='task')wirePhotoField('cf3');
   $('#cgo').onclick=()=>{
     const closedBy=$('#cf1').value,comment=$('#cf2').value.trim();
-    const doSave=()=>{save(type,{...o,done:true,doneAt:today(),closedBy,comment});
+    const proofPhoto=type==='task'?(pendingPhoto!==null?pendingPhoto:(o.proofPhoto||'')):undefined;
+    const doSave=()=>{save(type,{...o,done:true,doneAt:today(),closedBy,comment,...(type==='task'?{proofPhoto}:{})});
       if(type==='task'&&o.reward!==''&&o.reward!=null)addReward(closedBy,Number(o.reward));
       if(after)after()};
     if(type==='task'&&o.reward!==''&&o.reward!=null){
@@ -143,21 +194,25 @@ function closeSheet(type,id,after){
 }
 function edit(type,id){
   const o=data[type].find(x=>x.id===id);if(!o)return;
-  if(type==='task')sheet(`<label>งานที่ต้องทำ</label><input id="f1" value="${esc(o.title)}">
+  if(type==='task'){sheet(`<label>งานที่ต้องทำ</label><input id="f1" value="${esc(o.title)}">
     <label>มอบหมายให้</label><select id="f2">${opts([['a',names.a],['b',names.b],['ab','ทั้งคู่']],o.who)}</select>
     <div class="row"><div><label>ทำภายในวันที่</label><input id="f3" type="date" value="${esc(o.date)||''}"></div><div><label>เวลา</label><input id="f4" type="time" value="${esc(o.time)||''}"></div></div>
     <label>🎁 เงินรางวัล (บาท, ถ้ามี)</label><input id="f6" type="number" inputmode="decimal" min="0" value="${o.reward!==''&&o.reward!=null?esc(o.reward):''}">
-    <label>รายละเอียดเพิ่มเติม</label><textarea id="f5" placeholder="รายละเอียดของงาน">${esc(o.notes)||''}</textarea>`,
+    <label>รายละเอียดเพิ่มเติม</label><textarea id="f5" placeholder="รายละเอียดของงาน">${esc(o.notes)||''}</textarea>
+    ${photoField('f7',o.photo)}`,
     ()=>{const t=$('#f1').value.trim();if(!t){$('#f1').focus();return false}
       const rv=$('#f6').value.trim();
-      save('task',{...o,title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim(),reward:rv===''?'':parseFloat(rv)})});
-  else sheet(`<label>รายการ</label><input id="f1" value="${esc(o.title)}">
+      save('task',{...o,title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim(),reward:rv===''?'':parseFloat(rv),photo:pendingPhoto!==null?pendingPhoto:(o.photo||'')})});
+    wirePhotoField('f7');}
+  else{sheet(`<label>รายการ</label><input id="f1" value="${esc(o.title)}">
     <label>หมวด</label><select id="f2">${opts(CATS.map(c=>[c,c]),o.cat)}</select>
     <div class="row"><div><label>จำนวนเงิน (บาท, ถ้ามี)</label><input id="f3" type="number" inputmode="decimal" min="0" value="${esc(o.amount)}"></div><div><label>วันที่</label><input id="f4" type="date" value="${esc(o.date)||''}"></div></div>
     <label>ใครจ่าย</label><select id="f5">${opts([['a',names.a],['b',names.b]],o.who)}</select>
-    <label>รายละเอียดเพิ่มเติม</label><textarea id="f6" placeholder="รายละเอียดค่าใช้จ่าย">${esc(o.notes)||''}</textarea>`,
+    <label>รายละเอียดเพิ่มเติม</label><textarea id="f6" placeholder="รายละเอียดค่าใช้จ่าย">${esc(o.notes)||''}</textarea>
+    ${photoField('f7',o.photo)}`,
     ()=>{const t=$('#f1').value.trim();const nv=$('#f3').value.trim();if(!t){$('#f1').focus();return false}
-      save('exp',{...o,title:t,cat:$('#f2').value,amount:nv===''?'':parseFloat(nv),date:$('#f4').value,who:$('#f5').value,notes:$('#f6').value.trim()})});
+      save('exp',{...o,title:t,cat:$('#f2').value,amount:nv===''?'':parseFloat(nv),date:$('#f4').value,who:$('#f5').value,notes:$('#f6').value.trim(),photo:pendingPhoto!==null?pendingPhoto:(o.photo||'')})});
+    wirePhotoField('f7');}
 }
 function detail(type,id){
   const o=data[type].find(x=>x.id===id);if(!o)return;
@@ -175,14 +230,20 @@ function detail(type,id){
   if(o.done&&o.closedBy)rows+=row('ปิดโดย',esc(who(o.closedBy)));
   const notesHtml=o.notes?`<div class="m" style="margin-top:12px">รายละเอียด</div><div class="note">${esc(o.notes)}</div>`:'';
   const commentHtml=(o.done&&o.comment)?`<div class="m" style="margin-top:12px">คอมเมนต์ตอนปิด</div><div class="note">${esc(o.comment)}</div>`:'';
+  const photoHtml=o.photo?`<div class="m" style="margin-top:12px">${type==='task'?'รูปตอนมอบหมาย':'รูปใบเสร็จ'}</div><img src="${o.photo}" class="detailimg" data-img="${o.photo}">`:'';
+  const proofHtml=(type==='task'&&o.proofPhoto)?`<div class="m" style="margin-top:12px">รูปตอนปิดงาน</div><img src="${o.proofPhoto}" class="detailimg" data-img="${o.proofPhoto}">`:'';
   const ov=$('#ov');ov.hidden=false;
-  ov.innerHTML=`<div class="sheet"><div style="font-size:18px;font-weight:700;margin-bottom:10px">${esc(o.title)}</div>${rows}${notesHtml}${commentHtml}
+  ov.innerHTML=`<div class="sheet"><div style="font-size:18px;font-weight:700;margin-bottom:10px">${esc(o.title)}</div>${rows}${notesHtml}${photoHtml}${proofHtml}${commentHtml}
     <div class="row" style="margin-top:16px">
       ${o.done?'':'<button class="go ed" id="dedit" style="margin-top:0">แก้ไข</button>'}
       <button class="go" id="dtoggle" style="margin-top:0;background:${o.done?'var(--bd)':'var(--ok)'};color:${o.done?'var(--tx)':'#fff'}">${o.done?'↩︎ เปิดใหม่':'ปิด'+(type==='task'?'งาน':'รายการ')}</button>
       <button class="go" id="ddel" style="margin-top:0;background:var(--bad)">ลบ</button>
     </div></div>`;
-  ov.onclick=e=>{if(e.target===ov)ov.hidden=true};
+  ov.onclick=e=>{
+    const im=e.target.closest('[data-img]');
+    if(im){openImage(im.dataset.img);return}
+    if(e.target===ov)ov.hidden=true
+  };
   if(!o.done)$('#dedit').onclick=()=>{ov.hidden=true;edit(type,id)};
   $('#dtoggle').onclick=()=>{
     if(o.done){ov.hidden=true;save(type,{...o,done:false,doneAt:'',closedBy:'',comment:''})}
@@ -211,20 +272,20 @@ function render(){
     if(!op.length)h+='<div class="empty">ไม่มีงานค้าง 🎉</div>';
     for(const t of op){
       const late=t.date&&(t.date+'T'+(t.time||'23:59')<nowdt);
-      h+=`<div class="card${late?' late-card':''}" data-view="task:${esc(t.id)}"><div class="b">${late?'<div class="latebadge">⚠️ เลยกำหนด</div>':''}<div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span>${t.reward!==''&&t.reward!=null?'<span class="chip reward">🎁 '+baht(t.reward)+'</span>':''}<span class="${late?'late':''}">${t.date?'📅 '+fmtD(t.date):''}${t.time?' ⏰ '+esc(t.time):''}</span></div></div>${btn('edit','task',t.id,'แก้ไข','ed')}${btn('close','task',t.id,'ปิดงาน','cl')}${btn('del','task',t.id,'✕','x')}</div>`;
+      h+=`<div class="card${late?' late-card':''}" data-view="task:${esc(t.id)}">${t.photo?`<img src="${t.photo}" class="thumb" data-img="${t.photo}">`:''}<div class="b">${late?'<div class="latebadge">⚠️ เลยกำหนด</div>':''}<div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span>${t.reward!==''&&t.reward!=null?'<span class="chip reward">🎁 '+baht(t.reward)+'</span>':''}<span class="${late?'late':''}">${t.date?'📅 '+fmtD(t.date):''}${t.time?' ⏰ '+esc(t.time):''}</span></div></div>${btn('edit','task',t.id,'แก้ไข','ed')}${btn('close','task',t.id,'ปิดงาน','cl')}${btn('del','task',t.id,'✕','x')}</div>`;
     }
     if(dn.length){h+=sec('✅ งานที่เสร็จแล้ว',dn.length);
-      for(const t of dn)h+=`<div class="card done" data-view="task:${esc(t.id)}"><div class="b"><div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span>${t.reward!==''&&t.reward!=null?'<span class="chip reward">🎁 ได้ '+baht(t.reward)+'</span>':''}ปิดเมื่อ ${fmtD(t.doneAt)}</div></div>${btn('open','task',t.id,'↩︎ เปิดใหม่','ro')}${btn('del','task',t.id,'✕','x')}</div>`}
+      for(const t of dn){const tph=t.proofPhoto||t.photo;h+=`<div class="card done" data-view="task:${esc(t.id)}">${tph?`<img src="${tph}" class="thumb" data-img="${tph}">`:''}<div class="b"><div class="t">${esc(t.title)}</div><div class="m"><span class="chip">${esc(who(t.who))}</span>${t.reward!==''&&t.reward!=null?'<span class="chip reward">🎁 ได้ '+baht(t.reward)+'</span>':''}ปิดเมื่อ ${fmtD(t.doneAt)}</div></div>${btn('open','task',t.id,'↩︎ เปิดใหม่','ro')}${btn('del','task',t.id,'✕','x')}</div>`}}
   }else{
     const op=data.exp.filter(e=>!e.done).sort((a,b)=>(b.date||'').localeCompare(a.date||'')),dn=data.exp.filter(e=>e.done).sort(byDone);
     h+=sec('⏳ ค่าใช้จ่ายที่ยังไม่ปิด',op.length);
     if(!op.length)h+='<div class="empty">ไม่มีรายการค้าง</div>';
     for(const e of op){
       const late=e.date&&e.date<today();
-      h+=`<div class="card${late?' late-card':''}" data-view="exp:${esc(e.id)}"><div class="b">${late?'<div class="latebadge">⚠️ เลยกำหนด</div>':''}<div class="t">${esc(e.title)}</div><div class="m"><span class="chip">${esc(e.cat)}</span>${esc(who(e.who))} จ่าย · ${fmtD(e.date)}</div></div>${e.amount!==''&&e.amount!=null?`<div class="amt">${baht(e.amount)}</div>`:''}${btn('edit','exp',e.id,'แก้ไข','ed')}${btn('close','exp',e.id,'ปิดรายการ','cl')}${btn('del','exp',e.id,'✕','x')}</div>`;
+      h+=`<div class="card${late?' late-card':''}" data-view="exp:${esc(e.id)}">${e.photo?`<img src="${e.photo}" class="thumb" data-img="${e.photo}">`:''}<div class="b">${late?'<div class="latebadge">⚠️ เลยกำหนด</div>':''}<div class="t">${esc(e.title)}</div><div class="m"><span class="chip">${esc(e.cat)}</span>${esc(who(e.who))} จ่าย · ${fmtD(e.date)}</div></div>${e.amount!==''&&e.amount!=null?`<div class="amt">${baht(e.amount)}</div>`:''}${btn('edit','exp',e.id,'แก้ไข','ed')}${btn('close','exp',e.id,'ปิดรายการ','cl')}${btn('del','exp',e.id,'✕','x')}</div>`;
     }
     if(dn.length){h+=sec('✅ ค่าใช้จ่ายที่ปิดแล้ว',dn.length);
-      for(const e of dn)h+=`<div class="card done" data-view="exp:${esc(e.id)}"><div class="b"><div class="t">${esc(e.title)}</div><div class="m"><span class="chip">${esc(e.cat)}</span>${esc(who(e.who))} จ่าย · ปิดเมื่อ ${fmtD(e.doneAt)}</div></div>${e.amount!==''&&e.amount!=null?`<div class="amt">${baht(e.amount)}</div>`:''}${btn('open','exp',e.id,'↩︎','ro')}${btn('del','exp',e.id,'✕','x')}</div>`}
+      for(const e of dn)h+=`<div class="card done" data-view="exp:${esc(e.id)}">${e.photo?`<img src="${e.photo}" class="thumb" data-img="${e.photo}">`:''}<div class="b"><div class="t">${esc(e.title)}</div><div class="m"><span class="chip">${esc(e.cat)}</span>${esc(who(e.who))} จ่าย · ปิดเมื่อ ${fmtD(e.doneAt)}</div></div>${e.amount!==''&&e.amount!=null?`<div class="amt">${baht(e.amount)}</div>`:''}${btn('open','exp',e.id,'↩︎','ro')}${btn('del','exp',e.id,'✕','x')}</div>`}
   }
   $('#view').innerHTML=h;
 }
@@ -239,6 +300,8 @@ $('#view').addEventListener('click',e=>{
     else if(a==='open'&&o)save(ty,{...o,done:false,doneAt:'',closedBy:'',comment:''});
     return;
   }
+  const th=e.target.closest('[data-img]');
+  if(th){openImage(th.dataset.img);return}
   const c=e.target.closest('[data-view]');
   if(c){const [ty,i]=c.dataset.view.split(':');detail(ty,i)}
 });
@@ -255,21 +318,25 @@ function sheet(html,onGo){
 }
 const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 $('#fab').onclick=()=>{
-  if(tab==='task')sheet(`<label>งานที่ต้องทำ</label><input id="f1" placeholder="เช่น ล้างจาน ถูบ้าน">
+  if(tab==='task'){sheet(`<label>งานที่ต้องทำ</label><input id="f1" placeholder="เช่น ล้างจาน ถูบ้าน">
     <label>มอบหมายให้</label><select id="f2">${opts([['a',names.a],['b',names.b],['ab','ทั้งคู่']],'a')}</select>
     <div class="row"><div><label>ทำภายในวันที่</label><input id="f3" type="date" value="${today()}"></div><div><label>เวลา</label><input id="f4" type="time"></div></div>
     <label>🎁 เงินรางวัล (บาท, ถ้ามี)</label><input id="f6" type="number" inputmode="decimal" min="0" placeholder="เช่น 20">
-    <label>รายละเอียดเพิ่มเติม (ถ้ามี)</label><textarea id="f5" placeholder="รายละเอียดของงาน"></textarea>`,
+    <label>รายละเอียดเพิ่มเติม (ถ้ามี)</label><textarea id="f5" placeholder="รายละเอียดของงาน"></textarea>
+    ${photoField('f7',null)}`,
     ()=>{const t=$('#f1').value.trim();if(!t){$('#f1').focus();return false}
       const rv=$('#f6').value.trim();
-      save('task',{id:id(),title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim(),reward:rv===''?'':parseFloat(rv),done:false})});
-  else sheet(`<label>รายการ</label><input id="f1" placeholder="เช่น ค่าเทอมเทอม 2, สบู่, น้ำยาปรับผ้านุ่ม">
+      save('task',{id:id(),title:t,who:$('#f2').value,date:$('#f3').value,time:$('#f4').value,notes:$('#f5').value.trim(),reward:rv===''?'':parseFloat(rv),photo:pendingPhoto||'',done:false})});
+    wirePhotoField('f7');}
+  else{sheet(`<label>รายการ</label><input id="f1" placeholder="เช่น ค่าเทอมเทอม 2, สบู่, น้ำยาปรับผ้านุ่ม">
     <label>หมวด</label><select id="f2">${opts(CATS.map(c=>[c,c]),'ของใช้ในบ้าน')}</select>
     <div class="row"><div><label>จำนวนเงิน (บาท, ถ้ามี)</label><input id="f3" type="number" inputmode="decimal" min="0"></div><div><label>วันที่</label><input id="f4" type="date" value="${today()}"></div></div>
     <label>ใครจ่าย</label><select id="f5">${opts([['a',names.a],['b',names.b]],'a')}</select>
-    <label>รายละเอียดเพิ่มเติม (ถ้ามี)</label><textarea id="f6" placeholder="รายละเอียดค่าใช้จ่าย"></textarea>`,
+    <label>รายละเอียดเพิ่มเติม (ถ้ามี)</label><textarea id="f6" placeholder="รายละเอียดค่าใช้จ่าย"></textarea>
+    ${photoField('f7',null)}`,
     ()=>{const t=$('#f1').value.trim();const nv=$('#f3').value.trim();if(!t){$('#f1').focus();return false}
-      save('exp',{id:id(),title:t,cat:$('#f2').value,amount:nv===''?'':parseFloat(nv),date:$('#f4').value,who:$('#f5').value,notes:$('#f6').value.trim()})});
+      save('exp',{id:id(),title:t,cat:$('#f2').value,amount:nv===''?'':parseFloat(nv),date:$('#f4').value,who:$('#f5').value,notes:$('#f6').value.trim(),photo:pendingPhoto||''})});
+    wirePhotoField('f7');}
 };
 $('#gear').onclick=()=>sheet(`<label>ชื่อคนที่ 1</label><input id="f1" value="${esc(names.a)}"><label>ชื่อคนที่ 2</label><input id="f2" value="${esc(names.b)}">`,
   ()=>{const n={a:$('#f1').value.trim()||'คนที่ 1',b:$('#f2').value.trim()||'คนที่ 2'};names=n;lsSet('names',n);
