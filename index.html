@@ -59,6 +59,9 @@ h1{font-size:20px;margin:4px 0 12px;display:flex;justify-content:space-between;a
 .photoprev .rm{margin-top:6px;background:none;border:1px solid var(--bd);color:var(--bad);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px}
 .lightbox img{max-width:100%;max-height:100%;border-radius:8px}
+.lightbox .lbclose{position:absolute;top:calc(14px + env(safe-area-inset-top,0px));right:16px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:#fff;font-size:20px;line-height:1}
+.backbar{display:flex;align-items:center;gap:8px;margin:-4px -4px 10px;padding:4px}
+.backbar button{background:none;border:0;color:var(--tx);font:inherit;font-weight:600;font-size:15px;padding:6px 4px;display:flex;align-items:center;gap:4px}
 .detailimg{max-width:100%;border-radius:12px;margin-top:8px;cursor:zoom-in;display:block}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
@@ -160,19 +163,20 @@ function wirePhotoField(id){
 function openImage(src){
   if(!src)return;
   const lb=document.createElement('div');lb.className='lightbox';
-  lb.innerHTML=`<img src="${src}">`;
-  lb.onclick=()=>lb.remove();
+  lb.innerHTML=`<button class="lbclose" id="lbx">✕</button><img src="${src}">`;
+  lb.onclick=e=>{if(e.target===lb||e.target.id==='lbx')lb.remove()};
   document.body.appendChild(lb);
 }
 function closeSheet(type,id,after){
   const o=data[type].find(x=>x.id===id);if(!o)return;
   const ov=$('#ov');ov.hidden=false;
-  ov.innerHTML=`<div class="sheet"><div style="font-weight:600;margin-bottom:6px">ปิด${type==='task'?'งาน':'รายการ'}: ${esc(o.title)}</div>
+  ov.innerHTML=`<div class="sheet"><div class="backbar"><button id="csback">← กลับ</button></div><div style="font-weight:600;margin-bottom:6px">ปิด${type==='task'?'งาน':'รายการ'}: ${esc(o.title)}</div>
     <label>ปิดโดย</label><select id="cf1">${opts([['a',names.a],['b',names.b]],o.who==='b'?'b':'a')}</select>
     <label>คอมเมนต์ (ถ้ามี)</label><textarea id="cf2" placeholder="เช่น เสร็จแล้ว ทำตามที่มอบหมาย"></textarea>
     ${type==='task'?photoField('cf3',o.proofPhoto):''}
     <button class="go" id="cgo" style="background:var(--ok)">ยืนยันปิด${type==='task'?'งาน':'รายการ'}</button></div>`;
   ov.onclick=e=>{if(e.target===ov)ov.hidden=true};
+  $('#csback').onclick=()=>{ov.hidden=true};
   if(type==='task')wirePhotoField('cf3');
   $('#cgo').onclick=()=>{
     const closedBy=$('#cf1').value,comment=$('#cf2').value.trim();
@@ -233,7 +237,7 @@ function detail(type,id){
   const photoHtml=o.photo?`<div class="m" style="margin-top:12px">${type==='task'?'รูปตอนมอบหมาย':'รูปใบเสร็จ'}</div><img src="${o.photo}" class="detailimg" data-img="${o.photo}">`:'';
   const proofHtml=(type==='task'&&o.proofPhoto)?`<div class="m" style="margin-top:12px">รูปตอนปิดงาน</div><img src="${o.proofPhoto}" class="detailimg" data-img="${o.proofPhoto}">`:'';
   const ov=$('#ov');ov.hidden=false;
-  ov.innerHTML=`<div class="sheet"><div style="font-size:18px;font-weight:700;margin-bottom:10px">${esc(o.title)}</div>${rows}${notesHtml}${photoHtml}${proofHtml}${commentHtml}
+  ov.innerHTML=`<div class="sheet"><div class="backbar"><button id="dback">← กลับ</button></div><div style="font-size:18px;font-weight:700;margin-bottom:10px">${esc(o.title)}</div>${rows}${notesHtml}${photoHtml}${proofHtml}${commentHtml}
     <div class="row" style="margin-top:16px">
       ${o.done?'':'<button class="go ed" id="dedit" style="margin-top:0">แก้ไข</button>'}
       <button class="go" id="dtoggle" style="margin-top:0;background:${o.done?'var(--bd)':'var(--ok)'};color:${o.done?'var(--tx)':'#fff'}">${o.done?'↩︎ เปิดใหม่':'ปิด'+(type==='task'?'งาน':'รายการ')}</button>
@@ -244,6 +248,7 @@ function detail(type,id){
     if(im){openImage(im.dataset.img);return}
     if(e.target===ov)ov.hidden=true
   };
+  $('#dback').onclick=()=>{ov.hidden=true};
   if(!o.done)$('#dedit').onclick=()=>{ov.hidden=true;edit(type,id)};
   $('#dtoggle').onclick=()=>{
     if(o.done){ov.hidden=true;save(type,{...o,done:false,doneAt:'',closedBy:'',comment:''})}
@@ -312,8 +317,9 @@ const today=()=>{const d=new Date();return `${d.getFullYear()}-${pad2(d.getMonth
 const nowLocal=()=>{const d=new Date();return `${today()}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`};
 const opts=(a,sel)=>a.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
 function sheet(html,onGo){
-  const o=$('#ov');o.hidden=false;o.innerHTML=`<div class="sheet">${html}<button class="go" id="go">บันทึก</button></div>`;
+  const o=$('#ov');o.hidden=false;o.innerHTML=`<div class="sheet"><div class="backbar"><button id="shback">← กลับ</button></div>${html}<button class="go" id="go">บันทึก</button></div>`;
   o.onclick=e=>{if(e.target===o)o.hidden=true};
+  $('#shback').onclick=()=>{o.hidden=true};
   $('#go').onclick=()=>{if(onGo()!==false)o.hidden=true};
 }
 const id=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,5);
